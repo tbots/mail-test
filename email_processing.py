@@ -112,9 +112,10 @@ class RossumAPI(object):
                 # document_list = r.json()
                 # Pagination count to check if there is more then 1 page otherwise file won't be found
                 pagination_count = r.json()['pagination']['total_pages']
-                # I have setup 20 seconds because when I tested it yesterday there was long response from the server
-                print('File is loading ... ')
-                time.sleep(20)
+                # I have setup 15 seconds because when I tested it yesterday there was long response from the server
+                # and not all files were in list shown in API
+                print('Retreiving information about all documents in all queues ... ')
+                time.sleep(15)
                 # script checks count of pages and goes page by page and concatinate results to list
                 for page in range(1, pagination_count+1):
                     documents_endpoint = f'https://{self.API_URL}/v1/documents?page={page}'
@@ -153,7 +154,7 @@ class RossumAPI(object):
                     annotation_link = i['annotations']
                     filename = i['original_file_name']
         if annotation_link is None:
-            print('The file not found')
+            print('The file not found. It seems annotation link is empty.')
             return 1
 
         print(f'Latest uploaded file {filename} and its annotation link: {annotation_link[0]}')
@@ -168,7 +169,7 @@ class RossumAPI(object):
             if r.status_code in range(200, 299):
                 annotation_data = r.json()['status']
                 if annotation_data == 'to_review' and filename==FILE_NAME:
-                    print(f"The {filename} has been succesfully added to queue!")
+                    print(f"The {filename} has been succesfully added to queue! OK.")
                     return 0
                 elif annotation_data == 'failed_import':
                     print(f"Import failed")
@@ -183,10 +184,7 @@ class RossumAPI(object):
 if __name__ == '__main__':
     client = RossumAPI()
     client.get_access_token()
+    client.import_file_by_email()
     client.list_all_documents()
-#    client.import_file_by_email()
     client.check_processing()
-
-
-
 
