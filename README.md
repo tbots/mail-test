@@ -28,5 +28,5 @@ b) to run the script in PyCharm or another IDE, please add support for `.env` fi
         • ROSSUM_PASSWORD -- password of a user in trial organization
 
 	If email was processed correctly, file was loaded and shown in API -> return 0
-        If email was not processed correctly or file was not found in API or server cannot be reached -> return 1
+	If email was not processed correctly or file was not found in API or server cannot be reached -> return 1
 
