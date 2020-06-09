@@ -183,14 +183,13 @@ def main():
     client.get_access_token()
     client.import_file_by_email()
     client.list_all_documents()
-    client.check_processing()
     if client.check_processing() == 2:
         print('********* CHECK#1: format is not supported *********')
         client.list_all_documents()
         client.check_processing()
         if client.check_processing()==2:
-            print('It seems you have sent not supported file format which was not processed.')
-            return 1
+            print ('It seems you have sent not supported file format which was not processed.')
+            exit(1)
 
 if __name__ == '__main__':
     main()
