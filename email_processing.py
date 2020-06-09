@@ -56,7 +56,7 @@ class RossumAPI(object):
 
         print('Performing authentication at RossumAPI ... ')
         try:
-            r = requests.post(login_api_url, data=login_data, timeout=0.001)
+            r = requests.post(login_api_url, data=login_data)
             # Get HTTP status code of a domain + path + data
             if r.status_code not in range(200, 299):
                 raise Exception("Could not authenticate client.")
@@ -106,31 +106,26 @@ class RossumAPI(object):
         headers = {
             "Authorization": f"token {access_token}"
         }
+        try:
+            r = requests.get(documents_endpoint, headers=headers)
+            if r.status_code in range(200, 299):
+                # document_list = r.json()
+                # Pagination count to check if there is more then 1 page otherwise file won't be found
+                pagination_count = r.json()['pagination']['total_pages']
+                # I have setup 20 seconds because when I tested it yesterday there was long response from the server
+                print('File is loading ... ')
+                time.sleep(20)
+                # script checks count of pages and goes page by page and concatinate results to list
+                for page in range(1, pagination_count+1):
+                    documents_endpoint = f'https://{self.API_URL}/v1/documents?page={page}'
+                    r = requests.get(documents_endpoint, headers=headers)
+                    if r.status_code in range(200, 299):
+                        all_files += r.json()['results']
+                self.all_files = all_files
+                return self.all_files
 
-        r = requests.get(documents_endpoint, headers=headers)
-        if r.status_code in range(200, 299):
-            # document_list = r.json()
-            # Pagination count to check if there is more then 1 page otherwise file won't be found
-            pagination_count = r.json()['pagination']['total_pages']
-            # I have setup 20 seconds because when I tested it yesterday there was long response from the server
-            print('File is loading ... ')
-            time.sleep(20)
-            # script checks count of pages and goes page by page and concatinate results to list
-            for page in range(1, pagination_count+1):
-                documents_endpoint = f'https://{self.API_URL}/v1/documents?page={page}'
-                r = requests.get(documents_endpoint, headers=headers)
-                if r.status_code in range(200, 299):
-                    all_files += r.json()['results']
-                else:
-                    print(
-                        f'The service cannot be reached or something else goes wrong. Server response with status code: {r.status_code}')
-                    return 1
-            self.all_files = all_files
-            return self.all_files
-
-        else:
-            print(f'The service cannot be reached or something else goes wrong. Server response with status code: {r.status_code}')
-            return 1
+        except requests.exceptions.RequestException:
+            raise Exception(f'Failed to connect to {documents_endpoint}') from None
 
     def check_processing(self):
         """ This function checks for latest uploaded file by arrived_at date and by filename then retreives its relevant information (annotation link)
@@ -166,23 +161,24 @@ class RossumAPI(object):
         headers = {
             "Authorization": f"token {access_token}"
         }
-        r = requests.get(annotation_link[0], headers=headers)
 
-        if r.status_code in range(200, 299):
-            annotation_data = r.json()['status']
-            if annotation_data == 'to_review' and filename==FILE_NAME:
-                print(f"The {filename} has been succesfully added to queue!")
-                return 0
-            elif annotation_data == 'failed_import':
-                print(f"Import failed")
-                return 1
-            else:
-                print('It seems the file is still importing ... Waiting for 20 seconds and retrieving processing status again ...')
-                time.sleep(20)
-                self.check_processing()
-        else:
-            print(f'The service cannot be reached or something else goes wrong. Server response with status code: {r.status_code}')
-            return 1
+        try:
+            r = requests.get(annotation_link[0], headers=headers)
+
+            if r.status_code in range(200, 299):
+                annotation_data = r.json()['status']
+                if annotation_data == 'to_review' and filename==FILE_NAME:
+                    print(f"The {filename} has been succesfully added to queue!")
+                    return 0
+                elif annotation_data == 'failed_import':
+                    print(f"Import failed")
+                    return 1
+                else:
+                    print('It seems the file is still importing ... Waiting for 20 seconds and retrieving processing status again ...')
+                    time.sleep(20)
+                    self.check_processing()
+        except requests.exceptions.RequestException:
+                raise Exception(f'Failed to connect to {annotation_link[0]}') from None
 
 if __name__ == '__main__':
     client = RossumAPI()
