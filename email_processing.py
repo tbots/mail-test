@@ -109,14 +109,12 @@ class RossumAPI(object):
         try:
             r = requests.get(documents_endpoint, headers=headers)
             if r.status_code in range(200, 299):
-                # document_list = r.json()
                 # Pagination count to check if there is more then 1 page otherwise file won't be found
                 pagination_count = r.json()['pagination']['total_pages']
-                # I have setup 15 seconds because when I tested it yesterday there was long response from the server
-                # and not all files were in list shown in API
+                # I have setup 30 seconds because when I tested it less than 30 seconds was not enoght for adding a file and file was not shown in all documents
                 print('Retreiving information about all documents in all queues ... ')
-                time.sleep(15)
-                # script checks count of pages and goes page by page and concatinate results to list
+                time.sleep(30)
+                # script checks count of pages and goes page by page and concatenate results to list
                 for page in range(1, pagination_count+1):
                     documents_endpoint = f'https://{self.API_URL}/v1/documents?page={page}'
                     r = requests.get(documents_endpoint, headers=headers)
@@ -135,6 +133,10 @@ class RossumAPI(object):
         """
         FILE_NAME = self.FILE_NAME
         access_token = self.access_token
+        headers = {
+            "Authorization": f"token {access_token}"
+        }
+
         # date is used for comparing and finding the lastest date
         date = '0001-01-01T00:00:00.000Z'
         document_list = self.all_files
@@ -155,14 +157,9 @@ class RossumAPI(object):
                     filename = i['original_file_name']
         if annotation_link is None:
             print('The file not found. It seems annotation link is empty.')
-            return 1
+            return 2
 
-        print(f'Latest uploaded file {filename} and its annotation link: {annotation_link[0]}')
-
-        headers = {
-            "Authorization": f"token {access_token}"
-        }
-
+        print(f'Latest uploaded file {FILE_NAME} and its annotation link: {annotation_link[0]}')
         try:
             r = requests.get(annotation_link[0], headers=headers)
 
@@ -175,16 +172,27 @@ class RossumAPI(object):
                     print(f"Import failed")
                     return 1
                 else:
-                    print('It seems the file is still importing ... Waiting for 20 seconds and retrieving processing status again ...')
+                    print('It seems the file is still importing ... \nWaiting for 20 seconds and retrieving processing status again ...')
                     time.sleep(20)
                     self.check_processing()
         except requests.exceptions.RequestException:
                 raise Exception(f'Failed to connect to {annotation_link[0]}') from None
 
-if __name__ == '__main__':
+def main():
     client = RossumAPI()
     client.get_access_token()
     client.import_file_by_email()
     client.list_all_documents()
     client.check_processing()
+    if client.check_processing() == 2:
+        print('********* CHECK#1: format is not supported *********')
+        client.list_all_documents()
+        client.check_processing()
+        if client.check_processing()==2:
+            print('It seems you have sent not supported file format which was not processed.')
+            return 1
+
+if __name__ == '__main__':
+    main()
+
 
