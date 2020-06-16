@@ -8,17 +8,24 @@ source mail-env/bin/activate
 ```
 
 2. Please setup environment variables for script execution in config.ini file.
+
 [settings]
+
 ROSSUM_USER=
+
 ROSSUM_PASSWORD=
+
 SENDER_EMAIL_ADDRESS=
+
 SENDER_EMAIL_PASSWORD=
+
 FILE_NAME=
+
 EMAIL=
+
 API_URL=
 
 ## Usage:
-
 Script to check Rossum processing of e-mail attachments sent to an organization inbox.
     1. script performs authentication at Rossum API using get_access_token().
     2. sends an email with a file attachment (FILE_NAME) to an email address of a trial organization (EMAIL)
